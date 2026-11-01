@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HAFIZ: check the offer before the visa</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#eef2f1;--card:#fff;--ink:#10252a;--mute:#5a6e72;--line:#d3dcdc;--acc:#0e6b73;--accfg:#fff;--g:#1e8e5a;--a:#b87a0c;--r:#c23b3b;--n:#6b7b7e;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1b1e;--card:#15292d;--ink:#e6efef;--mute:#93a9ad;--line:#274146;--acc:#4fc3cc;--accfg:#06262a;--g:#4cc58a;--a:#e0a63a;--r:#ee7373;--n:#93a9ad;color-scheme:dark}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:640px;margin:0 auto;padding:20px 16px 48px}
+h1{font:700 34px/1.1 "Source Serif 4",Georgia,serif;margin:8px 0 4px}
+h2{font:600 20px/1.2 "Source Serif 4",Georgia,serif;margin:0 0 10px}
+.sub{color:var(--mute);margin:0 0 20px}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+label{display:block;font-size:14px;color:var(--mute);margin:12px 0 4px}
+textarea,input,select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px}
+textarea{min-height:110px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+button{font:inherit;cursor:pointer;border-radius:10px;padding:10px 14px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+button.p{background:var(--acc);color:var(--accfg);border-color:var(--acc);font-weight:600;width:100%;margin-top:14px}
+button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.steps{list-style:none;padding:0;margin:0 0 12px;font-size:14px;color:var(--mute)}
+.steps li{padding:3px 0}.steps li::before{content:"✓ ";color:var(--g)}
+.lamp{display:flex;gap:12px;align-items:center;border-radius:12px;padding:14px;border:2px solid var(--n)}
+.dot{width:22px;height:22px;border-radius:50%;flex:none;background:var(--n)}
+.lamp.g{border-color:var(--g)}.lamp.g .dot{background:var(--g)}
+.lamp.a{border-color:var(--a)}.lamp.a .dot{background:var(--a)}
+.lamp.r{border-color:var(--r)}.lamp.r .dot{background:var(--r)}
+.lamp b{display:block}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:12px 0}
+th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line)}
+.flags{margin:8px 0;padding-left:18px;font-size:14px}
+.note{font-size:13px;color:var(--mute)}
+.msg{background:var(--bg);border-radius:12px;padding:10px 12px;margin:8px 0;font-size:15px}
+.msg small{display:block;color:var(--mute);font-size:12px}
+pre{white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:10px;font:13px/1.4 ui-monospace,monospace;overflow-x:auto}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+<h1>HAFIZ</h1>
+<p class="sub">Paste a job offer. The agent reads the promise, checks it against your documents, and tells you what to do next.</p>
+
+<section>
+<h2>1. The offer</h2>
+<label for="t">What did the recruiter send you?</label>
+<textarea id="t" placeholder="Paste the WhatsApp, Facebook or Telegram message"></textarea>
+<div class="chips" id="chips"></div>
+<h2 style="margin-top:16px">2. What your documents say</h2>
+<div class="row">
+<div><label for="dv">Visa on document</label><select id="dv"><option value="auto">Read from message</option><option value="visit">Visit / tourist</option><option value="work">Work / employment</option><option value="unknown">Not known yet</option></select></div>
+<div><label for="ds">Salary in contract (AED)</label><input id="ds" type="number" inputmode="numeric" placeholder="Leave empty if none"></div>
+</div>
+<label for="da">Accommodation in contract</label>
+<select id="da"><option value="unknown">Not known yet</option><option value="yes">Provided</option><option value="no">Not provided</option></select>
+<button class="p" id="go">Check this offer</button>
+</section>
+
+<section id="res" hidden>
+<h2>Agent report</h2>
+<ul class="steps" id="steps"></ul>
+<div class="lamp" id="lamp"><span class="dot"></span><div><b id="vt"></b><span id="vd"></span></div></div>
+<table><thead><tr><th>Check</th><th>Promised</th><th>Documents</th><th>Gap</th></tr></thead><tbody id="tb"></tbody></table>
+<p id="prd" class="note"></p>
+<ul class="flags" id="fl"></ul>
+<p class="note">Four honest states: a check is Verified, Contradicted, Unverified or Incomplete. Missing information is never counted as a lie. A high score only sends the case to a human reviewer. It never blocks anyone.</p>
+</section>
+
+<section id="pro" hidden>
+<h2>3. The agent follows up on its own</h2>
+<p class="note">A chatbot waits for you. An agent keeps watching. Fast-forward and see what HAFIZ does without being asked.</p>
+<button id="ff">Fast-forward 30 days</button>
+<div id="fu" hidden>
+<div class="msg"><small>HAFIZ, Status Guardian</small>Your visa ends in 30 days. Here is what to do now: ask your employer for the renewal papers, and keep a copy of your passport page. I can remind you again at 7 days.</div>
+<div class="msg"><small>HAFIZ, weekly check-in</small>How was your week? Tell me in your own words. Do you have your passport? Have you been paid?</div>
+<label for="ci">Your reply</label>
+<textarea id="ci" placeholder="Try: my sponsor kept my passport and I was not paid this month"></textarea>
+<button class="p" id="rep">Send reply</button>
+<div id="out" hidden></div>
+</div>
+</section>
+
+<section id="ev" hidden>
+<h2>Evidence pack</h2>
+<p class="note">Built from what you shared. It stays with you until you choose to share it with a shelter or legal aid.</p>
+<pre id="pk"></pre>
+<button id="cp">Copy evidence pack</button>
+</section>
+
+<p class="note">Prototype. Extraction here uses plain rules so every result can be explained. Weights (visa 0.50, salary 0.30, accommodation 0.20) are starting hypotheses to calibrate with experts. Sample cases are synthetic. Nothing is sent anywhere.</p>
+</main>
+<script>
+var $=function(i){return document.getElementById(i)};
+var W={visa:.5,sal:.3,acc:.2},ST={};
+var SAMPLES=[
+{n:"Uncle on WhatsApp",t:"Salam brother, warehouse job in Dubai, salary AED 3500, free accommodation. Come on visit visa, we convert to work permit after you arrive. Pay 2000 AED fee to my cousin on WhatsApp today. Hurry, only 2 slots left.",v:"auto",s:1800,a:"no"},
+{n:"A real contract",t:"Offer letter from Al Noor Trading LLC: Sales assistant, AED 4000 per month, accommodation provided. Work visa issued by the employer before travel. No fee from the candidate.",v:"auto",s:4000,a:"yes"},
+{n:"Clean license, dirty path",t:"Registered hospitality company. Cook position, AED 2800 monthly with accommodation. Enter on tourist visa and we will change status at the airport.",v:"auto",s:2800,a:"yes"},
+{n:"The quiet one",t:"Hi brother, very good job waiting for you in Dubai, very good salary. Don't worry about papers, I handle everything. Just send your passport copy and a small service charge to my cousin's number. Come soon.",v:"auto",s:"",a:"unknown"}
+];
+SAMPLES.forEach(function(x){var b=document.createElement("button");b.textContent=x.n;b.onclick=function(){$("t").value=x.t;$("dv").value=x.v;$("ds").value=x.s;$("da").value=x.a;run()};$("chips").appendChild(b)});
+
+function extract(t){
+var e={};
+e.visa=/visit|tourist|tourism/i.test(t)?"visit":(/work (visa|permit)|employment visa/i.test(t)?"work":"unknown");
+var m=t.match(/(?:aed|dhs?|dirhams?)\s*([\d,]{3,6})|([\d,]{3,6})\s*(?:aed|dhs?|dirhams?)/i);
+e.sal=m?parseFloat((m[1]||m[2]).replace(/,/g,"")):null;
+e.acc=/accommodat|housing|lodging|room/i.test(t);
+e.fee=(/\b(pay|send|transfer|deposit)\b[^.]{0,40}(aed|dhs?|dirhams?|usd|money|amount|charge|fee|cash|payment)/i.test(t)||/\bfees?\b|advance|service charge|processing|ticket money|registration|commission|token|gift|small amount/i.test(t))&&!/no (fee|charge|payment)|free of charge|without (any )?fee/i.test(t);
+e.rush=/hurry|urgent|only \d+ (slots|seats|places)|limited|today only/i.test(t);
+e.ppt=/passport/i.test(t)&&/(send|give|keep|hold|submit)/i.test(t);
+e.chat=/whatsapp|telegram|facebook|dm me/i.test(t);e.third=/my (cousin|brother|friend|uncle|wife|agent)|personal (account|number)|this number|western union|crypto|usdt|wallet/i.test(t);e.nodoc=!/contract|offer letter|offer number|permit number|mohre|work permit/i.test(t);e.nocall=/no (call|contract)|don.t need (a )?contract|don.t worry about (papers|documents)|i handle everything|trust me/i.test(t);e.noco=!/\b(ltd|llc|l\.l\.c|company|co\.|group|hotel|restaurant|fze|fzco|trading)\b/i.test(t);
+return e}
+
+function run(){
+var t=$("t").value.trim();
+if(!t){$("t").focus();return}
+var e=extract(t),dv=$("dv").value==="auto"?e.visa:$("dv").value;
+var rows=[],sum=0,wt=0,known=0;
+function add(k,label,prom,doc,d,w){
+var st=d===null?(prom==="n/a"?"Unverified":"Incomplete"):(d>=.5?"Contradicted":"Verified");
+rows.push([label,prom,doc,d===null?"–":d.toFixed(2)+" "+st]);
+if(d!==null){sum+=w*d;wt+=w;known++}}
+add("visa","Visa","employment",dv==="visit"?"visit visa":dv==="work"?"work visa":"unknown",dv==="visit"?1:dv==="work"?0:null,W.visa);
+var r=parseFloat($("ds").value),ds=e.sal&&r>0?Math.max(0,Math.min(1,(e.sal-r)/e.sal)):null;
+add("sal","Salary",e.sal?"AED "+e.sal:"not stated",r>0?"AED "+r:"unknown",ds,W.sal);
+var da=$("da").value,dacc=!e.acc?null:(da==="no"?1:da==="yes"?0:null);
+add("acc","Accommodation",e.acc?"promised":"not stated",da==="yes"?"provided":da==="no"?"not provided":"unknown",dacc,W.acc);
+var prd=wt?sum/wt:null;
+ST={t:t,e:e,rows:rows,prd:prd,known:known,dv:dv};
+var steps=["Read the message and pulled out visa, salary, accommodation and payment requests","Compared each promise with your documents","Marked missing information as Incomplete, not as a lie","Weighted the gaps into one score (Promise-to-Reality Delta)","Chose a next step. A human decides anything with consequences"];
+$("steps").innerHTML=steps.map(function(s){return"<li>"+s+"</li>"}).join("");
+$("tb").innerHTML=rows.map(function(x){return"<tr><td>"+x.join("</td><td>")+"</td></tr>"}).join("");
+var cls="n",vt,vd;
+if(prd===null||known<2){vt="Not enough to judge yet";vd=" Add your contract or visa details. Do not pay or travel until you have them.";}
+else if(prd>=.7){cls="r";vt="Flagged for human review";vd=" Do not pay or travel yet. A caseworker should look at this before you decide.";}
+else if(prd>=.3){cls="a";vt="Some gaps, ask questions first";vd=" Ask the recruiter to fix the gaps in writing.";}
+else{cls="g";vt="Consistent so far";vd=" Nothing contradicts the promise. Still confirm the employer before paying anything.";}
+if(cls==="g"&&e.fee){cls="a";vt="Consistent, but a payment is requested";vd=" Real employers do not charge workers a fee. Ask first.";}
+var sc=[e.fee,e.rush,e.ppt,e.third,e.nocall].filter(Boolean).length;
+if(cls==="n"){if(sc>=3){cls="r";vt="Flagged for human review";vd=" Several warning signs and nothing you can verify. Do not pay or send your passport.";}else if(sc>=2){cls="a";vt="Warning signs, nothing you can verify";vd=" Do not pay or send your passport. Ask for a written offer and the visa type first.";}else{vd+=" Silence is not safety: an offer that avoids the visa, pay and contract is a reason to ask, not to trust.";}}
+$("lamp").className="lamp "+cls;$("vt").textContent=vt;$("vd").textContent=vd;
+$("prd").textContent=prd===null?"Score: not available (no checks could be made).":"Promise-to-Reality Delta: "+prd.toFixed(2)+" from "+known+" of 3 checks. 0.70 or more goes to human review.";
+var f=[];
+if(e.fee)f.push("Asks the worker to pay a fee or send money.");
+if(e.rush)f.push("Uses pressure or a limited-slots message.");
+if(e.ppt)f.push("Asks for, or mentions keeping, your passport.");
+if(e.chat)f.push("Recruiting only through a private chat, with no official offer.");
+if(e.third)f.push("Payment goes to a person or personal account, not a company.");
+if(e.nocall)f.push("Says “trust me” or that they handle the papers for you.");
+if(e.nodoc)f.push("No written contract or verifiable offer number mentioned. Ask for one.");
+if(e.noco)f.push("No employer company named.");
+$("fl").innerHTML=f.length?f.map(function(x){return"<li>"+x+"</li>"}).join(""):"<li>No pressure or payment signs found in this message.</li>";
+["res","pro","ev"].forEach(function(i){$(i).hidden=false});
+build();$("res").scrollIntoView({behavior:"smooth"})}
+
+function build(c){
+var s=ST,l=["EVIDENCE PACK (draft, created by HAFIZ)","","Offer message:",s.t,"","Checks:"];
+s.rows.forEach(function(x){l.push("- "+x[0]+": promised "+x[1]+", documents "+x[2]+", gap "+x[3])});
+l.push("","PRD: "+(s.prd===null?"n/a":s.prd.toFixed(2)));
+if(c)l.push("","Worker check-in: "+c.text,"Signals: "+c.sig.join(", "));
+l.push("","Shared only with the worker's consent.");
+$("pk").textContent=l.join("\n")}
+
+$("go").onclick=run;
+$("ff").onclick=function(){$("fu").hidden=false;$("ff").hidden=true};
+$("rep").onclick=function(){
+var t=$("ci").value.trim();if(!t)return;
+var sig=[];
+if(/(passport|documents?).{0,40}(kept|held|took|keeps|taken|locked)|(kept|took|holds?|taken).{0,30}(passport|documents?)/i.test(t))sig.push("documents held");
+if(/not paid|unpaid|no salary|haven.t been paid|didn.t pay|without pay/i.test(t))sig.push("wages unpaid");
+if(/threat|afraid|scared|deport|police|beat|hit|locked|can.t leave/i.test(t))sig.push("fear or threat");
+var o=$("out");o.hidden=false;
+if(sig.length){
+o.innerHTML='<div class="msg"><small>HAFIZ</small>Thank you for telling me. I noticed: <b>'+sig.join(", ")+'</b>. You are not in trouble for asking. I have prepared your evidence pack. With your permission I can ask a caseworker from a partner shelter to contact you, so you are treated as someone who may need protection before any overstay process starts.</div><div class="chips"><button id="y">Yes, ask a caseworker</button><button id="n">Not now</button></div><p id="rs" class="note"></p>';
+$("y").onclick=function(){$("rs").textContent="Demo only: in the real system a human caseworker would be notified, with your consent."};
+$("n").onclick=function(){$("rs").textContent="Okay. Your evidence pack stays with you. Say your safe word any time."};
+}else{
+o.innerHTML='<div class="msg"><small>HAFIZ</small>Thanks for the update. I did not find signs of trouble in what you wrote. I will check in again next week. If anything changes, tell me.</div>'}
+build({text:t,sig:sig.length?sig:["none found"]})};
+$("cp").onclick=function(){
+var tx=$("pk").textContent;
+try{navigator.clipboard.writeText(tx).then(function(){$("cp").textContent="Copied"})}catch(x){}
+};
+</script>
+</body>
+</html>
